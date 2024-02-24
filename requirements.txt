@@ -1,0 +1,5 @@
+pandas
+liwc
+spacy
+nltk
+
