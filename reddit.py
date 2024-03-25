@@ -1,13 +1,14 @@
 import re
-# import spacy
+import spacy
 import tldextract
 import pandas as pd
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud, STOPWORDS
 import numpy as np
 
-# nlp = spacy.load("en_core_web_sm")
+
 reddit_data = pd.read_csv('./datasets/reddit/reddit_politics.csv')
+
 
 def get_missing_data(data):
     total_missing = data.isnull().sum()
@@ -56,4 +57,20 @@ reddit_data['title'] = reddit_data['title'].apply(lambda x: re.sub(r'\bComment\b
 # merge title and body into new fields called post
 reddit_data['post'] = reddit_data['title'] + ' ' + reddit_data['body']
 # reddit_data.drop(['title', 'body'], axis=1, inplace=True)
+
+
+def count_tokens_pipe(texts):
+    # token_counts = [len(doc) for doc in nlp.pipe(texts, disable=["parser", "ner"])] # This may be faster
+    token_counts = [len(doc) for doc in nlp.pipe(texts)]
+    return token_counts
+
+
+nlp = spacy.load("en_core_web_sm")
+
+reddit_data['token_count'] = count_tokens_pipe(reddit_data['post'])
+print(reddit_data.head())
+
+# get the mean token count
+print(reddit_data['token_count'].mean())
+
 reddit_data.to_csv('./datasets/reddit/processedReddit.csv', index=False)
