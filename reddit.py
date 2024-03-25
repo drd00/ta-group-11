@@ -5,7 +5,10 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud, STOPWORDS
 import numpy as np
-
+import nltk
+from nltk.stem.porter import PorterStemmer
+from spacy.lang.en.stop_words import STOP_WORDS as SPACY_STOP_WORDS
+from nltk.corpus import stopwords
 
 reddit_data = pd.read_csv('./datasets/reddit/reddit_politics.csv')
 
@@ -60,7 +63,6 @@ reddit_data['post'] = reddit_data['title'] + ' ' + reddit_data['body']
 
 
 def count_tokens_pipe(texts):
-    # token_counts = [len(doc) for doc in nlp.pipe(texts, disable=["parser", "ner"])] # This may be faster
     token_counts = [len(doc) for doc in nlp.pipe(texts)]
     return token_counts
 
@@ -72,5 +74,37 @@ print(reddit_data.head())
 
 # get the mean token count
 print(reddit_data['token_count'].mean())
+
+# Initialize NLTK's stemmer,
+# You may try run
+# ```sudo python -m nltk.downloader -d /usr/local/share/nltk_data all```
+# in your terminal to download all the nltk data
+nltk.download('stopwords')
+stemmer = PorterStemmer()
+
+# Initialize list of stopwords
+nltk_stopwords = set(stopwords.words('english'))
+all_stopwords = SPACY_STOP_WORDS.union(nltk_stopwords)
+
+
+def preprocess_texts(texts):
+    processed_texts = []  # store the processed texts
+
+    # nlp.pipe returns a generator that yields Doc objects
+    for doc in nlp.pipe(texts, disable=["parser", "ner"]):
+        # Filter out punctuation and digits
+        tokens = [token.text for token in doc if not token.is_punct and not token.is_digit]
+        stemmed_tokens = [stemmer.stem(token) for token in tokens]
+        tokens_no_stop = [word for word in stemmed_tokens if word.lower() not in all_stopwords]
+
+        # Add to the list
+        processed_texts.append(tokens_no_stop)
+
+    return processed_texts
+
+
+print(f'Processing {len(reddit_data)} texts...')
+reddit_data['processed_tokens'] = preprocess_texts(reddit_data['post'])
+print(reddit_data.head())
 
 reddit_data.to_csv('./datasets/reddit/processedReddit.csv', index=False)
