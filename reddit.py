@@ -66,7 +66,7 @@ def count_tokens_pipe(texts):
     token_counts = [len(doc) for doc in nlp.pipe(texts)]
     return token_counts
 
-
+# run python -m spacy download en_core_web_sm
 nlp = spacy.load("en_core_web_sm")
 
 reddit_data['token_count'] = count_tokens_pipe(reddit_data['post'])
@@ -93,7 +93,8 @@ def preprocess_texts(texts):
     # nlp.pipe returns a generator that yields Doc objects
     for doc in nlp.pipe(texts, disable=["parser", "ner"]):
         # Filter out punctuation and digits
-        tokens = [token.text for token in doc if not token.is_punct and not token.is_digit]
+        tokens = [token.text for token in doc if not token.is_punct and not token.is_digit
+                  and not token.is_space and token.text.strip() not in ['\n', '\n\n', '>', '<', '=']]
         stemmed_tokens = [stemmer.stem(token) for token in tokens]
         tokens_no_stop = [word for word in stemmed_tokens if word.lower() not in all_stopwords]
 
