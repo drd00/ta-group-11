@@ -114,6 +114,14 @@ print(f'Processing {len(reddit_data)} texts...')
 processed_no_stop, processed_with_stop = preprocess_texts(reddit_data['post'])
 reddit_data['processed_tokens_no_stop'] = processed_no_stop
 reddit_data['processed_tokens_with_stop'] = processed_with_stop
+# Transform empty lists to None (or pd.NA) before the dropna operation
+reddit_data['processed_tokens_no_stop'] = [None if x == [] else x for x in reddit_data['processed_tokens_no_stop']]
+reddit_data['processed_tokens_with_stop'] = [None if x == [] else x for x in reddit_data['processed_tokens_with_stop']]
+
+# Now, you can safely drop rows where the token lists are None
+reddit_data.dropna(subset=['processed_tokens_no_stop', 'processed_tokens_with_stop'], inplace=True)
+
+# Continue with the rest of your code
 print(reddit_data.head())
 
 
