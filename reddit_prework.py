@@ -2,9 +2,6 @@ import re
 import spacy
 import tldextract
 import pandas as pd
-from matplotlib import pyplot as plt
-from wordcloud import WordCloud, STOPWORDS
-import numpy as np
 import nltk
 from nltk.stem.porter import PorterStemmer
 from spacy.lang.en.stop_words import STOP_WORDS as SPACY_STOP_WORDS
@@ -88,24 +85,15 @@ all_stopwords = SPACY_STOP_WORDS.union(nltk_stopwords)
 
 
 def preprocess_texts(texts):
-    processed_texts_no_stop = []  # store the processed texts without stopwords
-    processed_texts_with_stop = []  # store the processed texts with stopwords
+    processed_texts_no_stop = []
+    processed_texts_with_stop = []
 
-    # nlp.pipe returns a generator that yields Doc objects
     for doc in nlp.pipe(texts, disable=["parser", "ner"]):
-        # Filter out punctuation, digits, and whitespace, but keep stopwords for one version
-        tokens_with_stop = [token.text for token in doc if not token.is_punct and not token.is_digit
-                            and not token.is_space and token.text.strip() not in ['\n', '\n\n', '>', '<', '=']]
+        tokens_with_stop = [token.lemma_ for token in doc if not token.is_punct and not token.is_space]
+        tokens_no_stop = [token for token in tokens_with_stop if token.lower() not in nltk_stopwords]
 
-        # Apply stemming
-        stemmed_tokens_with_stop = [stemmer.stem(token) for token in tokens_with_stop]
-
-        # Remove stopwords for the other version
-        tokens_no_stop = [word for word in stemmed_tokens_with_stop if word.lower() not in all_stopwords]
-
-        # Add to the lists
+        processed_texts_with_stop.append(tokens_with_stop)
         processed_texts_no_stop.append(tokens_no_stop)
-        processed_texts_with_stop.append(stemmed_tokens_with_stop)
 
     return processed_texts_no_stop, processed_texts_with_stop
 
