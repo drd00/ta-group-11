@@ -3,8 +3,10 @@ import spacy
 import re
 import liwc
 import ftfy
+from transformers import pipeline
 
 parse, category_names = liwc.load_token_parser('LIWC2015_Dictionary.dic')
+sentiment_pipeline = pipeline("sentiment-analysis")
 
 # If you haven't already, run python3 -m spacy download en_core_web_sm
 '''
@@ -23,29 +25,42 @@ df['post'] = df['post'].apply(lambda post_text: re.sub(r'https?://\S+|www\.\S+',
 print("FTFY.")
 df['post'] = df['post'].apply(ftfy.fix_text)    # fix encoding errors, etc.
 
-def analysis():
+def analysis(df):
+    new_df = df.copy()
     print("Running spaCy processing pipeline.")
-    docs = [doc for doc in nlp.pipe(df['post'])]
 
-    def normalised_liwc_politeness_calculation(doc):
-        # Get a normalised politeness score (accounting for the document length).
-        politeness = 0
-        for token in doc:
-            categories = list(parse(token.text.lower()))
-            if 'politeness' in categories:
-                politeness += 1
-        
-        return politeness / len(doc) if len(doc) > 0 else 0
+    # Remove where the post is empty
+    new_df = new_df[new_df['post'].str.strip() != '']
 
-    def liwc_politeness_calculation(doc):
-        politeness = 0
-        for token in doc:
-            categories = list(parse(token.text.lower()))
-            if 'politeness' in categories:
-                politeness += 1
+    # spaCy NLP processing.
+    docs = list(nlp.pipe(new_df['post'], n_process=-1))
+
+    friendly_words = set()
+    with open('friendly_words.txt', 'r') as f:
+        for line in f:
+            friendly_words.add(line.lower().strip())
+
+
+    def sentiment_analysis(text, max_length=512):
+        text_truncated = text[:max_length]
+
+        result = sentiment_pipeline(text_truncated)[0]
+        return result['label']
+
+    def politeness_analysis(doc):
+        # unigrams
+        politeness = sum(token.text.lower() in friendly_words for token in doc)
+        # bigrams
+        politeness += sum(get_bigrams(doc).count(bigram) for bigram in friendly_words)
+
         return politeness
 
-    def liwc_analysis(doc):
+    # get bigrams
+    def get_bigrams(doc):
+        return [doc[i].text.lower() + " " + doc[i + 1].text.lower() for i in range(len(doc) - 1)]
+    
+
+    def liwc_focus_ratio_analysis(doc):
         i_count = 0
         we_count = 0
         for token in doc:
@@ -63,13 +78,23 @@ def analysis():
         collective_focus = we_count / total
         return collective_focus
 
-    collective_focus_scores = [liwc_analysis(doc) for doc in docs]
-    politeness_scores = [normalised_liwc_politeness_calculation(doc) for doc in docs]
-    politeness_scores_raw = [liwc_politeness_calculation(doc) for doc in docs]
-    df['collective_focus'] = collective_focus_scores
-    df['normalised_politeness'] = politeness_scores
-    df['politeness'] = politeness_scores_raw
+    print("LIWC focus ratio analysis.")
+    collective_focus_scores = [liwc_focus_ratio_analysis(doc) for doc in docs]
+    new_df['collective_focus'] = collective_focus_scores
+    print("Complete.")
 
-analysis()
-pd.set_option('display.max_columns', None)
-print(df.head(20))
+    print("Politeness analysis.")
+    politeness_scores_raw = [politeness_analysis(doc) for doc in docs]
+    politeness_scores_normalised = [score / len(doc) for score, doc in zip(politeness_scores_raw, docs)]
+    new_df['normalised_politeness'] = politeness_scores_normalised
+    new_df['raw_politeness'] = politeness_scores_raw
+    print("Complete.")
+    print("Sentiment analysis.")
+
+    new_df['sentiment'] = new_df['post'].apply(lambda x: sentiment_analysis(x))
+    print("Complete.")
+    return new_df
+
+output_df = analysis(df)
+print("To CSV...")
+output_df.to_csv('boards_ie_politics_processed.csv', index=False)
