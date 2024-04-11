@@ -3,10 +3,11 @@ import spacy
 import re
 import liwc
 import ftfy
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer 
 
 parse, category_names = liwc.load_token_parser('LIWC2015_Dictionary.dic')
 sentiment_pipeline = pipeline("sentiment-analysis")
+tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
 
 # If you haven't already, run python3 -m spacy download en_core_web_sm
 '''
@@ -22,8 +23,12 @@ df['post'] = df['post'].astype(str) # ensure string type for post col
 # remove URLs using regex
 print("Link removal.")
 df['post'] = df['post'].apply(lambda post_text: re.sub(r'https?://\S+|www\.\S+', '', post_text))
+print("Comma and semicolon removal.")
+df['post'] = df['post'].str.replace(',', ' ')
 print("FTFY.")
 df['post'] = df['post'].apply(ftfy.fix_text)    # fix encoding errors, etc.
+
+sentiment_pipeline = pipeline("sentiment-analysis")
 
 def analysis(df):
     new_df = df.copy()
@@ -42,9 +47,11 @@ def analysis(df):
 
 
     def sentiment_analysis(text, max_length=512):
-        text_truncated = text[:max_length]
+        inputs = tokenizer.encode(text, truncation=True, max_length=max_length, return_tensors='pt')
 
-        result = sentiment_pipeline(text_truncated)[0]
+        truncated_text = tokenizer.decode(inputs[0], skip_special_tokens=True)
+
+        result = sentiment_pipeline(truncated_text)[0]
         return result['label']
 
     def politeness_analysis(doc):
@@ -91,7 +98,7 @@ def analysis(df):
     print("Complete.")
     print("Sentiment analysis.")
 
-    new_df['sentiment'] = new_df['post'].apply(lambda x: sentiment_analysis(x))
+    new_df['sentiment'] = new_df['post'].apply(sentiment_analysis)
     print("Complete.")
     return new_df
 
