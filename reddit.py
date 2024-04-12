@@ -76,6 +76,29 @@ print("Complete.")
 # # 显示图形
 # plt.show()
 
+def liwc_focus_ratio_analysis(doc):
+    i_count = 0
+    we_count = 0
+    for token in doc:
+        categories = list(parse(token.text.lower()))
+        if 'ppron' in categories:
+            if token.text.lower() == 'i':
+                i_count += 1
+            elif token.text.lower() == 'we':
+                we_count += 1
+
+    total = i_count + we_count
+    if total == 0:
+        return 0
+
+    collective_focus = we_count / total
+    return collective_focus
+
+print("LIWC focus ratio analysis.")
+collective_focus_scores = [liwc_focus_ratio_analysis(doc) for doc in docs]
+reddit_data['collective_focus'] = collective_focus_scores
+print("Complete.")
+
 def determine_liwc_sentiment(liwc_results):
     posemo_count = liwc_results.get('posemo', 0)
     negemo_count = liwc_results.get('negemo', 0)
