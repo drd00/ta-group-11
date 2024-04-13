@@ -10,3 +10,4 @@ wordcloud~=1.9.3
 transformers~=4.39.3
 torch==2.1.1
 scipy~=1.13.0
+scikit-posthocs
