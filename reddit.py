@@ -6,11 +6,31 @@ from wordcloud import WordCloud
 from nltk.tokenize import word_tokenize
 import ast
 import nltk
+from transformers import pipeline, AutoTokenizer
+
 nltk.download('punkt')
 
 parse, category_names = liwc.load_token_parser('LIWC2015_Dictionary.dic')
 reddit_data = pd.read_csv('./datasets/reddit/processedReddit.csv')
 
+
+
+print("Sentiment analysis.")
+sentiment_pipeline = pipeline("sentiment-analysis")
+tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
+
+def sentiment_analysis(text, max_length=512):
+    print(f'Processing text: {text}')
+    inputs = tokenizer.encode(text, truncation=True, max_length=max_length, return_tensors='pt')
+
+    truncated_text = tokenizer.decode(inputs[0], skip_special_tokens=True)
+    print(f'Truncated text: {truncated_text}')
+    result = sentiment_pipeline(truncated_text)[0]
+    print(f'Result: {result}')
+    return result['label']
+
+reddit_data['sentiment'] = reddit_data['post'].apply(sentiment_analysis)
+print("Complete.")
 
 def analyze_tokens_liwc(tokens_list):
     liwc_counts = {category:0 for category in category_names}
@@ -170,4 +190,4 @@ generate_sentiment_wordcloud(reddit_data, 'liwc_sentiment', 'processed_tokens_no
 generate_sentiment_wordcloud(reddit_data, 'liwc_sentiment', 'processed_tokens_no_stop', 'Neutral')
 
 
-reddit_data.to_csv('./datasets/reddit/reddit_result_polite.csv', index=False)
+reddit_data.to_csv('./datasets/reddit/reddit_result_new.csv', index=False)
