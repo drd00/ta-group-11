@@ -23,7 +23,7 @@ df['post'] = df['post'].astype(str) # ensure string type for post col
 # remove URLs using regex
 print("Link removal.")
 df['post'] = df['post'].apply(lambda post_text: re.sub(r'https?://\S+|www\.\S+', '', post_text))
-print("Comma and semicolon removal.")
+print("Comma removal.")
 df['post'] = df['post'].str.replace(',', ' ')
 print("FTFY.")
 df['post'] = df['post'].apply(ftfy.fix_text)    # fix encoding errors, etc.

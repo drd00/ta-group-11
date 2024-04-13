@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import scikit_posthocs as sp
 
-plot = False
+plot = True
 
 # Load Boards.ie data
 boardsie = pd.read_csv('./datasets/boardsie/boards_ie_politics_processed.csv')
