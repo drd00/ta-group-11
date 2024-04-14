@@ -95,13 +95,19 @@ if plot_dist:
 
 # Calculate basic descriptive statistics for each dataset
 print('Boards.ie basic descriptive stats')
-print(boardsie.describe())
+boardsie_desc = boardsie.describe()
+print(boardsie_desc)
+boardsie_desc.to_csv('./results/boardsie_descriptive_stats.csv')
 
 print('4chan basic descriptive stats')
-print(chan.describe())
+chan_desc = chan.describe()
+print(chan_desc)
+chan_desc.to_csv('./results/chan_descriptive_stats.csv')
 
 print('Reddit basic descriptive stats')
-print(reddit.describe())
+reddit_desc = reddit.describe()
+print(reddit_desc)
+reddit_desc.to_csv('./results/reddit_descriptive_stats.csv')
 
 # Plot means
 if plot_desc:
@@ -174,3 +180,15 @@ print(sp.posthoc_dunn([boardsie['raw_politeness'], chan['raw_politeness'], reddi
 print('sentiment')
 print(sp.posthoc_dunn([boardsie['sentiment'], chan['sentiment'], reddit['sentiment']], p_adjust='bonferroni'))
 
+# Save each post-hoc test result to a CSV
+cf_posthoc = sp.posthoc_dunn([boardsie['collective_focus'], chan['collective_focus'], reddit['collective_focus']], p_adjust='bonferroni')
+cf_posthoc.to_csv('./results/collective_focus_posthoc.csv')
+
+np_posthoc = sp.posthoc_dunn([boardsie['normalised_politeness'], chan['normalised_politeness'], reddit['normalised_politeness']], p_adjust='bonferroni')
+np_posthoc.to_csv('./results/normalised_politeness_posthoc.csv')
+
+rp_posthoc = sp.posthoc_dunn([boardsie['raw_politeness'], chan['raw_politeness'], reddit['raw_politeness']], p_adjust='bonferroni')
+rp_posthoc.to_csv('./results/raw_politeness_posthoc.csv')
+
+sentiment_posthoc = sp.posthoc_dunn([boardsie['sentiment'], chan['sentiment'], reddit['sentiment']], p_adjust='bonferroni')
+sentiment_posthoc.to_csv('./results/sentiment_posthoc.csv')
